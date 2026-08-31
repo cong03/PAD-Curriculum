@@ -1,0 +1,50 @@
+student_model_path: "Qwen/Qwen3-8B"
+scorer_model_path: "Qwen/Qwen3-32B"
+
+dataset: "gsm8k"
+train_size: null
+test_size: null
+
+global_batch_size: 128
+learning_rate: 1.0e-6
+training_epochs: 20
+group_size: 10
+max_response_length: 2048
+
+rerank_interval: 40
+eps: 1.0e-8
+
+verl:
+  actor_rollout_ref:
+    model:
+      path: ${student_model_path}
+      enable_gradient_checkpointing: true
+    actor:
+      optim:
+        lr: ${learning_rate}
+      ppo_mini_batch_size: 64
+      ppo_micro_batch_size: 8
+    rollout:
+      name: vllm
+      temperature: 1.0
+      top_p: 1.0
+      top_k: -1
+      n: ${group_size}
+      max_response_length: ${max_response_length}
+  reward_model:
+    enable: false
+  custom_reward_function:
+    path: "pad_curriculum.core.verifier"
+    name: "verify_batch"
+
+trainer:
+  nnodes: 1
+  n_gpus_per_node: 8
+  save_freq: 10
+  test_freq: 10
+  total_epochs: ${training_epochs}
+
+logger:
+  type: ["console", "wandb"]
+  project_name: "pad-curriculum"
+  experiment_name: "pad-qwen3-8b-gsm8k"
